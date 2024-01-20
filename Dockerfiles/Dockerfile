@@ -10,6 +10,6 @@ RUN echo 'export PATH=/usr/local/openjdk-17/bin:$PATH' >> ~/.bashrc
 
 EXPOSE 11100
 
-COPY singularity-server-0.0.1-SNAPSHOT.jar /var/apps/singularity-server-0.0.1-SNAPSHOT.jar
+COPY build/libs/singularity-server-0.0.1-SNAPSHOT.jar /var/apps/singularity-server-0.0.1-SNAPSHOT.jar
 
-CMD ["java", "-jar", "/var/apps/singularity-server-0.0.1-SNAPSHOT.jar"]
+CMD ["java", "-jar", "-Dserver.port=11100", "/var/apps/singularity-server-0.0.1-SNAPSHOT.jar"]
