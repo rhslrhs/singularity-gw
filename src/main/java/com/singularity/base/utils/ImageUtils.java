@@ -14,6 +14,8 @@ import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
 import java.nio.file.Files;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
@@ -58,8 +60,9 @@ public class ImageUtils {
 
         try {
             String uuid = UUID.randomUUID().toString();
-            ImageIO.write(originalImage, "jpg", new FileOutputStream("/Users/jingon/dev/train/org/" + uuid + "-1.jpg"));
-            ImageIO.write(newImage, "jpg", new FileOutputStream("/Users/jingon/dev/train/org/" + uuid + "-2.jpg"));
+            String defaultTrainPath = String.format("/Users/jingon/dev/train/org/%s/", LocalDate.now().format(DateTimeFormatter.ISO_DATE));
+            ImageIO.write(originalImage, "jpg", new FileOutputStream(defaultTrainPath + uuid + "-1.jpg"));
+            ImageIO.write(newImage, "jpg", new FileOutputStream(defaultTrainPath + uuid + "-2.jpg"));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
