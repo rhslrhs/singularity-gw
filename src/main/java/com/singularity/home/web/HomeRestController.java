@@ -14,6 +14,8 @@ import java.time.format.DateTimeFormatter;
 public class HomeRestController {
     @GetMapping("/")
     public ResponseEntity<String> get() {
-        return ResponseEntity.ok(LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME));
+        String now = LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME);
+        log.debug("## now: {}", now);
+        return ResponseEntity.ok(now);
     }
 }
