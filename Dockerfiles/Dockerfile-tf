@@ -6,9 +6,9 @@ LABEL name="rhslrhs"
 
 ENV TZ=Asia/Seoul
 ENV MODEL_BASE_PATH=/models
-ENV MODEL_NAME=model
+ENV MODEL_NAME=tf-mymodel
 
-COPY models/ $MODEL_BASE_PATH/
+COPY tf-mymodel/ $MODEL_BASE_PATH/
 
 EXPOSE 8500 8501
 
