@@ -6,6 +6,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
@@ -15,11 +17,14 @@ import java.util.Map;
 @Slf4j
 public class HomeRestController {
     @GetMapping("/")
-    public ResponseEntity<Map<String, Object>> get() {
+    public ResponseEntity<Map<String, Object>> get() throws UnknownHostException {
         String now = LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME);
         Map<String, Object> res = new HashMap<>();
         log.debug("## now: {}", now);
         res.put("reqTime", now);
+
+        InetAddress ipAddress = InetAddress.getLocalHost();
+        res.put("ip", ipAddress.getHostAddress());
         return ResponseEntity.ok(res);
     }
     @GetMapping("/wait")
