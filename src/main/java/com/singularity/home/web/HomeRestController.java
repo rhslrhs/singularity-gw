@@ -15,10 +15,12 @@ import java.util.Map;
 @Slf4j
 public class HomeRestController {
     @GetMapping("/")
-    public ResponseEntity<String> get() {
+    public ResponseEntity<Map<String, Object>> get() {
         String now = LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME);
+        Map<String, Object> res = new HashMap<>();
         log.debug("## now: {}", now);
-        return ResponseEntity.ok(now);
+        res.put("reqTime", now);
+        return ResponseEntity.ok(res);
     }
     @GetMapping("/wait")
     public ResponseEntity<Map<String, Object>> wait(@RequestParam(defaultValue = "1000") Long time) throws InterruptedException {
