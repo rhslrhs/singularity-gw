@@ -10,6 +10,9 @@ ENV MODEL_NAME=tf-mymodel
 
 COPY tf-mymodel/ $MODEL_BASE_PATH/tf-mymodel
 
+## change rest-api-port
+CMD sed -i 's@8501@11300@g' /usr/bin/tf_serving_entrypoint.sh
+
 EXPOSE 8500 8501
 
 ENTRYPOINT ["/usr/bin/tf_serving_entrypoint.sh"]
