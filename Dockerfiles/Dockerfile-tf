@@ -1,0 +1,15 @@
+# ```
+# singularity\singularity-server>  docker build -t singularity-gw:1.0.0 -f Dockerfiles/Dockerfile .
+# ```
+FROM tensorflow/serving
+LABEL name="rhslrhs"
+
+ENV TZ=Asia/Seoul
+ENV MODEL_BASE_PATH=/models
+ENV MODEL_NAME=model
+
+COPY my_model/ $MODEL_BASE_PATH/my_model/
+
+EXPOSE 8500 8501
+
+ENTRYPOINT ["/usr/bin/tf_serving_entrypoint.sh"]
