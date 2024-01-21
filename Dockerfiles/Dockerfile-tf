@@ -8,7 +8,7 @@ ENV TZ=Asia/Seoul
 ENV MODEL_BASE_PATH=/models
 ENV MODEL_NAME=model
 
-COPY my_model/ $MODEL_BASE_PATH/my_model/
+COPY models/ $MODEL_BASE_PATH/models/
 
 EXPOSE 8500 8501
 
