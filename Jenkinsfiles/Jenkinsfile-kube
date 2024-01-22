@@ -10,7 +10,8 @@ node {
     def kubeLBPort = "11100"
 
     stage("VCS Checkout") {
-        print("## scm: ${scm}")
+        print("## scm: ${scm.GIT_URL}")
+        print("## scm: ${scm.GIT_BRANCH}")
         print("## ${scm}")
         checkout scmGit(branches: [[name: '*/main']]
             , extensions: []
