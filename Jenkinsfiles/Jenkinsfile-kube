@@ -1,0 +1,80 @@
+node {
+    def dockerFileName = "Dockerfile"
+    def dockerHost = "sandbox@172.17.0.1"
+    def dockerHostWorkDir = "/home/sandbox/jenkins/workspace/singularity-gw"
+    def dockerImageName = "singularity/gw"
+    def dockerImageTag = dockerImageName + ":" + env.BUILD_ID
+    def dockerContainerName = "gw"
+    def kubeDeploymentName = "singularity-gw"
+    def kubePodReplicas = "2"
+    def kubeLBPort = "11100"
+
+    stage("VCS Checkout") {
+        checkout scmGit(branches: [[name: '*/main']]
+            , extensions: []
+            , userRemoteConfigs: [[url: 'https://github.com/rhslrhs/singularity-gw']]
+        )
+    }
+
+    stage("Gradle Build") {
+        sh """
+            ## build
+            chmod +x gradlew
+            ./gradlew build
+        """
+    }
+
+    stage("Image Build") {
+        sshagent (credentials: ["ssh-docker-host"]) {
+        // 호스트에서 docker Image Build
+        sh """
+            ssh -o StrictHostKeyChecking=no ${dockerHost} '
+                rm -rf ${dockerHostWorkDir}
+                mkdir -p ${dockerHostWorkDir}/${env.BUILD_ID}/Dockerfiles
+                mkdir -p ${dockerHostWorkDir}/${env.BUILD_ID}/build/libs
+            '
+
+            scp -r ${WORKSPACE}/Dockerfiles/ ${dockerHost}:${dockerHostWorkDir}/${env.BUILD_ID}/
+            scp -r ${WORKSPACE}/build/libs/ ${dockerHost}:${dockerHostWorkDir}/${env.BUILD_ID}/build/
+
+            ssh -o StrictHostKeyChecking=no ${dockerHost} '
+                ### change container image registry (local -> kube)
+                eval \$(minikube -p minikube docker-env)
+
+                ### build container image
+                cd ${dockerHostWorkDir}/${env.BUILD_ID}
+                docker build -t ${dockerImageTag} -f ./Dockerfiles/${dockerFileName} .
+            '
+        """
+        }
+    }
+
+    stage("Pod Run") {
+        sshagent (credentials: ["ssh-docker-host"]) {
+        // 호스트에서 docker Image Build
+        sh """
+            ssh -o StrictHostKeyChecking=no ${dockerHost} '
+                ### change container image registry (local -> kube)
+                eval \$(minikube -p minikube docker-env)
+
+                get_svc=\$(minikube kubectl -- get services | grep ${kubeDeploymentName})
+                echo "## getService: \${get_svc}"
+                svc_check=\$(expr length "\${get_svc}")
+                echo "## svc_check: \${svc_check}"
+
+                if [ \${svc_check} -eq 0 ];then
+                    echo "## kube - create new deployment"
+                    minikube kubectl -- create -n default deployment ${kubeDeploymentName} --image=${dockerImageTag}
+                    minikube kubectl -- expose -n default deployment ${kubeDeploymentName} --type=LoadBalancer --port=${kubeLBPort}
+                    minikube kubectl -- scale -n default deployment ${kubeDeploymentName} --replicas=${kubePodReplicas}
+
+                else
+                    echo "## kube - chage image"
+                    minikube kubectl -- set image -n default deployment/${kubeDeploymentName} ${dockerContainerName}=${dockerImageTag}
+                fi
+            '
+        """
+        }
+    }
+
+}
