@@ -23,6 +23,7 @@ import java.util.Optional;
 import java.util.UUID;
 import javax.imageio.ImageIO;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FileUtils;
 
 @Slf4j
 public class ImageUtils {
@@ -61,6 +62,7 @@ public class ImageUtils {
         try {
             String uuid = UUID.randomUUID().toString();
             String defaultTrainPath = String.format("/Users/jingon/dev/train/org/%s/", LocalDate.now().format(DateTimeFormatter.ISO_DATE));
+            FileUtils.forceMkdir(new File(defaultTrainPath));
             ImageIO.write(originalImage, "jpg", new FileOutputStream(defaultTrainPath + uuid + "-1.jpg"));
             ImageIO.write(newImage, "jpg", new FileOutputStream(defaultTrainPath + uuid + "-2.jpg"));
         } catch (IOException e) {
