@@ -12,4 +12,4 @@ EXPOSE 11100
 
 COPY build/libs/singularity-server-0.0.1-SNAPSHOT.jar /var/apps/singularity-server-0.0.1-SNAPSHOT.jar
 
-CMD ["java", "-jar", "-Dserver.port=11100", "/var/apps/singularity-server-0.0.1-SNAPSHOT.jar"]
+CMD ["java", "-jar", "-Dserver.port=11100", "-Dspring.profiles.active=rhslpc", "/var/apps/singularity-server-0.0.1-SNAPSHOT.jar"]
