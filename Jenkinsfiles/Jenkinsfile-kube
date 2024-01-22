@@ -10,13 +10,9 @@ node {
     def kubeLBPort = "11100"
 
     stage("VCS Checkout") {
+        def scm_variables = checkout scm
 
-        print("## scm: ${GIT_URL}")
-        print("## scm: ${GIT_BRANCH}")
-        checkout scmGit(branches: [[name: '*/main']]
-            , extensions: []
-            , userRemoteConfigs: [[url: 'https://github.com/rhslrhs/singularity-gw']]
-        )
+        print("## scm_variables: ${scm_variables}")
     }
 
     stage("Gradle Build") {
