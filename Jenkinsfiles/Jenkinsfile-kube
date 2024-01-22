@@ -11,7 +11,6 @@ node {
 
     stage("VCS Checkout") {
         def scm_variables = checkout scm
-
         print("## scm_variables: ${scm_variables}")
     }
 
@@ -50,7 +49,7 @@ node {
 
     stage("Pod Run") {
         sshagent (credentials: ["ssh-docker-host"]) {
-        // 호스트에서 docker Image Build
+        // 호스트에서 docker Image Run
         sh """
             ssh -o StrictHostKeyChecking=no ${dockerHost} '
                 ### change container image registry (local -> kube)
