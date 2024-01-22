@@ -6,9 +6,9 @@ LABEL name="rhslrhs"
 
 ENV TZ=Asia/Seoul
 ENV MODEL_BASE_PATH=/models
-ENV MODEL_NAME=tf-mymodel
+ENV MODEL_NAME=numImage
 
-COPY tf-mymodel/ $MODEL_BASE_PATH/tf-mymodel
+COPY tf-mymodel/ $MODEL_BASE_PATH/numImage
 
 ## change rest-api-port
 RUN sed -i 's@8501@11300@g' /usr/bin/tf_serving_entrypoint.sh
