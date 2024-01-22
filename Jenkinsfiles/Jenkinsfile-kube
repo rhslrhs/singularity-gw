@@ -12,7 +12,6 @@ node {
     stage("VCS Checkout") {
         print("## scm: ${scm.GIT_URL}")
         print("## scm: ${scm.GIT_BRANCH}")
-        print("## ${scm}")
         checkout scmGit(branches: [[name: '*/main']]
             , extensions: []
             , userRemoteConfigs: [[url: 'https://github.com/rhslrhs/singularity-gw']]
