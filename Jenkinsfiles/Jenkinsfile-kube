@@ -10,7 +10,7 @@ node {
     def kubeLBPort = "11100"
 
     stage("VCS Checkout") {
-        git checkout
+        git
     }
 
     stage("Gradle Build") {
