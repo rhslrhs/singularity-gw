@@ -32,8 +32,9 @@ public class HomeRestController {
         Map<String, Object> res = new HashMap<>();
         res.put("reqTime", LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME));
         String now = LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME);
-        log.debug("## wait-time: {}", time);
+        log.debug("## wait-time-s: {}", time);
         Thread.sleep(time);
+        log.debug("## wait-time-e: {}", time);
         res.put("resTime", LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME));
         res.put("time", time);
         return ResponseEntity.ok(res);
