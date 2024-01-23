@@ -22,14 +22,13 @@ public class HomeRestController {
         Map<String, Object> res = new HashMap<>();
         log.debug("## now: {}", now);
         res.put("reqTime", now);
-
-        InetAddress ipAddress = InetAddress.getLocalHost();
-        res.put("ip", ipAddress.getHostAddress());
+        res.put("ip", InetAddress.getLocalHost().getHostAddress());
         return ResponseEntity.ok(res);
     }
     @GetMapping("/wait")
-    public ResponseEntity<Map<String, Object>> wait(@RequestParam(defaultValue = "1000") Long time) throws InterruptedException {
+    public ResponseEntity<Map<String, Object>> wait(@RequestParam(defaultValue = "1000") Long time) throws InterruptedException, UnknownHostException {
         Map<String, Object> res = new HashMap<>();
+        res.put("ip", InetAddress.getLocalHost().getHostAddress());
         res.put("reqTime", LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME));
         String now = LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME);
         log.debug("## wait-time-s: {}", time);
