@@ -1,4 +1,4 @@
-package com.singularity.base.configration;
+package com.singularity.base.configuration;
 
 import com.singularity.base.component.CanvasImageSocketHandler;
 import com.singularity.base.component.SocketHandler;

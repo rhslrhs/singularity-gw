@@ -14,11 +14,14 @@ import lombok.ToString;
 @Getter
 @ToString
 public class NumberImagePredictionResDto extends BasePredictionResDto {
+    List<List<BigDecimal>> predictions;
     private List<ValIdxPredictionResDto> results;
     private List<ValIdxPredictionResDto> sortedResults;
     private ValIdxPredictionResDto maxValIdxPrediction;
     @Setter
     private List<String> processedImgs;
+    @Setter
+    private Long trainDataHistorySeq;
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     @NoArgsConstructor(access = AccessLevel.PRIVATE)

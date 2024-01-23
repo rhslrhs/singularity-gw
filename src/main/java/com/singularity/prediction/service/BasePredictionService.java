@@ -3,13 +3,16 @@ package com.singularity.prediction.service;
 import com.singularity.prediction.dto.BasePredictionResDto;
 import com.singularity.prediction.vo.BasePredictionReqVo;
 import com.singularity.prediction.vo.NumberImagePredictionResVo;
-import java.util.HashMap;
-import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClient.RequestBodyUriSpec;
 
+import java.util.HashMap;
+import java.util.Map;
+
+@Service
 @Slf4j
 public class BasePredictionService {
 

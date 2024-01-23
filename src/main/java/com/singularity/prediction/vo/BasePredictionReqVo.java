@@ -1,8 +1,8 @@
 package com.singularity.prediction.vo;
 
 import com.singularity.base.vo.BaseReqVo;
-import lombok.NoArgsConstructor;
 
-public class BasePredictionReqVo extends BaseReqVo {
+import java.util.List;
 
+public abstract class BasePredictionReqVo extends BaseReqVo {
 }

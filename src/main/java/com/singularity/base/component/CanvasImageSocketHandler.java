@@ -39,10 +39,7 @@ public class CanvasImageSocketHandler extends TextWebSocketHandler {
         TextMessage sendMsg = recvMsg;
 
         if (messageMap.containsKey("imageData")) {
-            NumberImageBase64StrPredictionReqDto reqDto = NumberImageBase64StrPredictionReqDto.builder()
-                .base64Str((String) messageMap.get("imageData"))
-                .build();
-
+            NumberImageBase64StrPredictionReqDto reqDto = new NumberImageBase64StrPredictionReqDto((String) messageMap.get("imageData"));
             NumberImagePredictionResDto predict = predictionService.predict(reqDto);
             sendMsg = new TextMessage(JsonUtils.stringify(predict));
         }

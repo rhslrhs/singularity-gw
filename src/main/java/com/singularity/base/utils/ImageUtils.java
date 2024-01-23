@@ -1,29 +1,20 @@
 package com.singularity.base.utils;
 
-import java.awt.Graphics;
-import java.awt.Image;
+import lombok.extern.slf4j.Slf4j;
+
+import javax.imageio.ImageIO;
+import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.awt.image.WritableRaster;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigDecimal;
 import java.math.MathContext;
 import java.math.RoundingMode;
-import java.nio.file.Files;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
-import java.util.Optional;
-import java.util.UUID;
-import javax.imageio.ImageIO;
-import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.io.FileUtils;
 
 @Slf4j
 public class ImageUtils {
@@ -59,15 +50,15 @@ public class ImageUtils {
             throw new RuntimeException(e);
         }
 
-        try {
-            String uuid = UUID.randomUUID().toString();
-            String defaultTrainPath = String.format("/Users/jingon/dev/train/org/%s/", LocalDate.now().format(DateTimeFormatter.ISO_DATE));
-            FileUtils.forceMkdir(new File(defaultTrainPath));
-            ImageIO.write(originalImage, "jpg", new FileOutputStream(defaultTrainPath + uuid + "-1.jpg"));
-            ImageIO.write(newImage, "jpg", new FileOutputStream(defaultTrainPath + uuid + "-2.jpg"));
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+//        try {
+//            String uuid = UUID.randomUUID().toString();
+//            String defaultTrainPath = String.format("/Users/jingon/dev/train/org/%s/", LocalDate.now().format(DateTimeFormatter.ISO_DATE));
+//            FileUtils.forceMkdir(new File(defaultTrainPath));
+//            ImageIO.write(originalImage, "jpg", new FileOutputStream(defaultTrainPath + uuid + "-1.jpg"));
+//            ImageIO.write(newImage, "jpg", new FileOutputStream(defaultTrainPath + uuid + "-2.jpg"));
+//        } catch (IOException e) {
+//            throw new RuntimeException(e);
+//        }
 
         return newImage;
     }
@@ -119,11 +110,12 @@ public class ImageUtils {
             .mapToInt(px -> px.multiply(BD_255, MathContext.DECIMAL64).setScale(0, RoundingMode.HALF_UP).intValue())
             .toArray();
         log.debug("## 0.0~1.0 -> 0~255: {}", Arrays.toString(pixelArr));
-        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_INDEXED);
+        BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_BYTE_GRAY);
         int idx = 0;
         for (int row = 0; row < width; row++) {
             for (int col = 0; col < height; col++) {
-                image.setRGB(col, row, pixelArr[idx++]);
+                int rgb1 = pixelArr[idx++];
+                image.setRGB(col, row, new Color(rgb1, rgb1, rgb1).getRGB());
             }
         }
 //        WritableRaster raster = (WritableRaster) image.getData();
@@ -145,9 +137,4 @@ public class ImageUtils {
 //        return null;
     }
 
-    public static void main(String[] args) {
-        List<BigDecimal> list = Arrays.asList(new BigDecimal("0.0000"),new BigDecimal("0.0000"),new BigDecimal("0.0000"),new BigDecimal("1.0000"));
-        String base64Str = toBase64Str(list, 2, 2);
-        System.out.println(base64Str);
-    }
 }

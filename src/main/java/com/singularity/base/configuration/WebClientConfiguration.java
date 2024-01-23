@@ -1,4 +1,4 @@
-package com.singularity.base.configration;
+package com.singularity.base.configuration;
 
 import io.netty.channel.ChannelOption;
 import io.netty.handler.timeout.ReadTimeoutHandler;

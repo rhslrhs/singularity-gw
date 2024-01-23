@@ -2,122 +2,249 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    
-    <title>웹알티시해봐요</title>
+    <style>
+        canvas { background-color: #fff; border: 1px solid #000; }
+    </style>
 </head>
 <body>
-    <button onclick="createOffer();">오퍼를 생성해요</button><br>
-    <div>내 영상이에요</div>
-    <video id="myFace" playsinline autoplay width="300" height="300"></video>
-    <br>
-    <div>피어의 영상이에요</div>
-    <video id="peerFace" playsinline autoplay width="300" height="300"></video>
-    <script>
-        // 일단 소켓 연결을 해봐요
-        var conn = new WebSocket('wss://192.168.5.107:8080/socket');
-        // 먼저 RTC객체를 만들어요 구글 stun 서버로 부터 나의 정보를 가져올게요
-        var configuration = {
-            "iceServers" : [{
-                "url" : "stun:stun.l.google.com:19302"
-            }]
-        }
-        var myPeerConnection = new RTCPeerConnection(configuration);
+<!--    <div>-->
+<!--        <table>-->
+<!--            <tr>-->
+<!--                <th><label for="strokeWidth">선굵기</label></th>-->
+<!--                <th><label for="strokeEraseWidth">지우개굵기</label></th>-->
+<!--                <th><label for="eraseAll">전체지우기</label></th>-->
+<!--            </tr>-->
+<!--            <tr>-->
+<!--                <td><input type="range" id="strokeWidth" min="1" max="30" value="5"></td>-->
+<!--                <td><input type="range" id="strokeEraseWidth" min="1" max="30" value="25"></td>-->
+<!--                <td><input type="button" id="eraseAll" value="ALL ">eraserAll</td>-->
+<!--            </tr>-->
+<!--        </table>-->
+<!--    </div>-->
+<div>
+    <span>
+        <canvas id="canvas" width="300px" height="300px"></canvas>
+        <canvas id="resizedCanvas" width="100px" height="100px" style="display: none"></canvas>
+    </span>
+    <span>
+        <img id="processedImg1" width="300px" height="300px"/>
+        <img id="processedImg2"/>
+    </span>
+</div>
+<div>
+    <button id="predict">예측</button>
+</div>
+<div>
+    <span id="resultMsg1"></span>
+</div>
+<script>
+    // let ws = new WebSocket(`wss://192.168.5.107:8080/ws/images`);
+    let ws = new WebSocket(`ws://${location.host}/ws/images`);
+    ws.onopen = function () {
+        console.log('Connect to ws');
+    };
 
-        // 내가 나의 캔디데이트(너가 나를 연결하는 방법들의 후보)를 등록하면(즉 로컬디스크립션을 설정하면)
-        // 트리거 되는 메서드에요
-        myPeerConnection.onicecandidate = function(event) {
-            console.log("나의 캔디데이트를 보낼게요");
-            send({
-                event: "candidate",
-                data: event.candidate
-            })
-        }
-        // 연결이 되서 피어의 스트림이 내 RTC객체에 등록되면 시작되는 메서드에요
-        myPeerConnection.addEventListener("addstream", handleAddStream);
-        function handleAddStream(data) {
-            console.log("스트리밍 데이터를 받아왔어요");
-            var peerFace = document.getElementById("peerFace");
-            peerFace.srcObject = data.stream;
-        }
+    function procResult(recvMsgBody) {
+        console.info("## recvMsgBody: ", recvMsgBody);
+        let max = recvMsgBody.maxValIdxPrediction;
+        let sortedResults = recvMsgBody.sortedResults || [];
+        let secondary = sortedResults[1];
+        document.getElementById("resultMsg1").textContent = max.value > 0.9 ? `[${max.idx}] 입니다` :
+            max.value > 0.5 ? `[${max.idx}] 인가요?` : `[${max.idx}] 아니면 [${secondary.idx}] 인 것 같아요.`
 
-        // 소켓이 연결되었을 때 실행할 콜백함수에요
-        conn.onopen = function() {
-            console.log("웹소켓이 연결되었어요");
+        let tbody = ``;
+        for (let i = 0; i < sortedResults.length; i++) {
+            let num = `${sortedResults[i].idx}`;
+            tbody += `<tr>
+<td>${num}</td>
+<td>${Number(sortedResults[i].value).toFixed(4)}</td>
+<td><button data-label="${num}" data-seq="${recvMsgBody.trainDataHistorySeq}">${num} [ALT] + [${num}]</button></td>
+</tr>`
+        }
+        document.getElementById("resultMsg2").innerHTML = `
+            <table border="1">
+                <tr><th>num</th><th>%</th><th>레이블선택</th></tr>
+                ${tbody}
+            </table>
+        `
+        let processedImg = recvMsgBody.processedImgs[0];
+        if (processedImg) {
+            document.getElementById("processedImg1").src = processedImg;
+            document.getElementById("processedImg2").src = processedImg;
+        }
+        initButtonEvent();
+    }
+
+    ws.onmessage = async function(msg) {
+        let recvMsgBody = JSON.parse(msg.data || "{}");
+        procResult(recvMsgBody);
+    }
+
+
+    let canvas = document.getElementById("canvas");
+    let ctx = canvas.getContext("2d");
+    let resizedCanvas = document.getElementById("resizedCanvas");
+    let resizedContext = resizedCanvas.getContext("2d");
+
+    ctx.fillStyle = "#000";
+    ctx.fillRect(0,0,300,300);
+    ctx.lineWidth = 25;
+    ctx.strokeStyle = "#fff";
+    let painting = false;
+
+    function stopPainting() {
+        if (painting) {
+            console.info("# stopPainting - ")
+            painting = false;
+            //     resizedContext.drawImage(canvas, 0, 0, 100, 100);
+            //     // resizedContext.fillStyle = "#000";
+            //
+            //     ws.send(JSON.stringify({"imageData": resizedCanvas.toDataURL("image/jpeg")}))
+        }
+    }
+
+    function startPainting() {
+        console.info("# startPainting - ")
+        painting = true;
+    }
+
+    function onMouseMove(event) {
+        // console.info("# onMouseMove - ", event)
+
+        let x1 = event.offsetX;
+        let y1 = event.offsetY;
+
+        if (!painting) {
+            ctx.beginPath();
+            ctx.moveTo(x1, y1);
+        } else {
+            ctx.lineTo(x1, y1);
+            ctx.stroke();
+        }
+    }
+    function assignElement() {
+
+        this.undoEl = this.toolbarEl.querySelector("#undo");
+    }
+
+    function addEvent() {
+
+        this.undoEl.addEventListener("click",this.onClickUndo.bind(this));
+    }
+
+    function saveState() {
+        if (this.undoArray.length > 4) {
+            this.undoArray.shift(); // 맨 처음의 데이터를 제거한다.
+            this.undoArray.push(this.canvasEl.toDataURL());
+        } else {
+            this.undoArray.push(this.canvasEl.toDataURL());
+        }
+    }
+
+    function onClickUndo() {
+        if (this.undoArray.length === 0) return;
+        let previousDataUrl = this.undoArray.pop();
+        let previousImage = new Image();
+        previousImage.src = previousDataUrl;
+        previousImage.onload = () => {
+            this.context.clearRect(0, 0, this.canvasEl.width, this.canvasEl.height);
+            this.context.drawImage(
+                previousImage,
+                0,
+                0,
+                this.canvasEl.width,
+                this.canvasEl.height,
+                0,
+                0,
+                this.canvasEl.width,
+                this.canvasEl.height
+            );
         };
+    }
 
-        // 소켓에서 메세지를 받아왔을 때 실행할 콜백함수에요
-        conn.onmessage = async function(msg) {
-            var content = JSON.parse(msg.data);
-            if (content.event == "offer") {
-                console.log("오퍼가 왔어요");
-                // 오퍼가 오면 가장먼저 그 오퍼를 리모트 디스크립션으로 등록해줘요
-                var offer = content.data;
-                myPeerConnection.setRemoteDescription(offer);
-                // 받는 쪽에서도 자신의 미디어를 켜줘요
-                await getMedia();
-                myStream.getTracks().forEach((track) => myPeerConnection.addTrack(track, myStream));
-                // 이제 앤서를 보내요
-                var answer = await myPeerConnection.createAnswer();
-                myPeerConnection.setLocalDescription(answer);
-                console.log("앤서를 보낼게요");
-                send({
-                    event: "answer",
-                    data: answer
-                })
-            } else if (content.event == "answer") {
-                console.log("앤서가 왔어요");
-                answer = content.data;
-                myPeerConnection.setRemoteDescription(answer);
-            } else if (content.event == "candidate") {
-                console.log("캔디데이트가 왔어요");
-                // 이 메서드를 통해 리모트 디스크립션에 설정되어있는 피어와의 연결방식을 결정해요
-                myPeerConnection.addIceCandidate(content.data);
+    if (canvas) {
+        canvas.addEventListener("mousemove", onMouseMove);//마우스가 움직일때 onMouseMove 메서드가 작동해라
+        canvas.addEventListener("mousedown", startPainting);//마우스를 눌렀을때 startPainting 메서드가 동작해라
+        canvas.addEventListener("mouseup", stopPainting);//마우스를 떼었을때 stopPainting 메서드가 동작해라
+        canvas.addEventListener("mouseleave", stopPainting);//마우스가 벗어났을때 stopPainting 메서드가 동작해라
+    }
+
+    // document.getElementById("strokeWidth").addEventListener("change", (e) => {
+    //     ctx.lineWidth = e.target.value; // 선 굵기 10픽셀
+    //     console.log("## aa " + e.target.value)
+    // });
+    // // document.getElementById("strokeEraseWidth").addEventListener("change", (e) => {
+    // //     ctx.lineWidth = e.target.value; // 선 굵기 10픽셀
+    // //     console.log("## aa " + e.target.value)
+    // // });
+    // document.getElementById("eraseAll").addEventListener("change", (e) => {
+    // });
+    //
+    // document.getElementById("strokeEraseWidth").dispatchEvent(new Event('change'));
+    // // document.getElementById("strokeWidth").dispatchEvent(new Event('change'));
+
+
+    function initButtonEvent() {
+        let labelSetBtnArr = document.querySelectorAll('button[data-label]');
+        for(let i = 0; i < labelSetBtnArr.length; i++) {
+            labelSetBtnArr[i].addEventListener("click", (e) => {
+                const xhr = new XMLHttpRequest();
+                const method = "POST";
+                const url = `http://${location.host}/api/v1/predict/number-image/label`;
+                let reqData = JSON.stringify(e.target.dataset); // { seq, label }
+
+                // 요청을 초기화 합니다.
+                xhr.open(method, url);
+                xhr.setRequestHeader('Content-Type', 'application/json');
+                xhr.onreadystatechange = function (event) {
+                    const { target } = event;
+                    if (target.readyState === XMLHttpRequest.DONE) {
+                        const { status } = target;
+                        if (status === 0 || (status >= 200 && status < 300)) {
+                            location.reload()
+                        } else {
+                        }
+                    }
+                };
+                xhr.send(reqData);
+            });
+        }
+    }
+
+    document.getElementById("predict").addEventListener("click", (e) => {
+        const xhr = new XMLHttpRequest();
+        const method = "POST";
+        const url = `http://${location.host}/api/v1/predict/number-image/json-base64`;
+
+        resizedContext.drawImage(canvas, 0, 0, 100, 100);
+        resizedContext.fillStyle = "#000";
+        let reqData = JSON.stringify({"base64Str": resizedCanvas.toDataURL("image/jpeg")});
+
+        // 요청을 초기화 합니다.
+        xhr.open(method, url);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.onreadystatechange = function (event) {
+            const { target } = event;
+            if (target.readyState === XMLHttpRequest.DONE) {
+                const { status } = target;
+
+                if (status === 0 || (status >= 200 && status < 400)) {
+                    procResult((JSON.parse(xhr.response)));
+                } else {
+                    // 에러가 발생한 경우
+                }
             }
+        };
+        xhr.send(reqData);
+    })
+    document.addEventListener('keydown', (e) => {
+        // e.preventDefault();
+        if (e.altKey && /[0-9]/.test(e.key)) {
+            document.querySelector(`button[data-label="${e.key}"]`).click();
+            return false;
         }
-
-        // 앞으로 소켓으로 메세지를 보낼 땐 이 함수를 쓸 생각이에요
-        function send(message) {
-            conn.send(JSON.stringify(message));
-        }
-
-        // 미디어와 관련된 변수를 선언해요 myFace는 element를 받고 myStream엔 영상 내용을 담을거에요
-        var myFace = document.getElementById("myFace");
-        var myStream;
-
-        //미디어 내용을 받기 시작하는 함수에요
-        async function getMedia() {
-            try {
-                myStream = await navigator.mediaDevices.getUserMedia({
-                    audio: true,
-                    video: true
-                });
-                myFace.srcObject = myStream;
-            } catch (e) {
-                console.log("미디어를 가져오는 중 에러가 발생했어요");
-            }
-        }
-
-        // '오퍼를 생성해요'라는 버튼을 눌렀을 때 이 메서드가 실행되요
-        async function createOffer() {
-            console.log("오퍼를 보내볼게요");
-
-            //일단 카메라를 킬게요 키면서 myStream에도 미디어 정보를 담아와요
-            await getMedia();
-
-            // getMedia에서 가져온 audio, video 트랙을 myPeerConnection에 등록해요
-            myStream.getTracks().forEach((track) => myPeerConnection.addTrack(track, myStream));
-            
-            // RTC객체도 만들었고 나의 미디어도 RTC객체에 담았으니 오퍼를 생성해볼게요
-            var offer = await myPeerConnection.createOffer();
-            console.log("오퍼를 전송시작해요!")
-            // 이제 send함수를 통해 소켓으로 나의 offer를 전송해 볼게요
-            await send({
-                event: "offer",
-                data: offer
-            })
-            console.log("오퍼 전송을 완료했어요")
-            myPeerConnection.setLocalDescription(offer);
-        }
-    </script>
+    });
+</script>
+<div id="resultMsg2"></div>
 </body>
 </html>
