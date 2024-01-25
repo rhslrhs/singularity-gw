@@ -1,5 +1,5 @@
 node {
-    def dockerFileName = "Dockerfile-200"
+    def dockerFileName = "Dockerfile-nas"
     def dockerHost = "sandbox@172.17.0.1"
     def dockerHostWorkDir = "/home/sandbox/jenkins/workspace/singularity-gw"
     def dockerImageName = "singularity/gw"
