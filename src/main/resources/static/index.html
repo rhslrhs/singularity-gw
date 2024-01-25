@@ -32,12 +32,14 @@
     </span>
 </div>
 <div>
-    <button id="predict">예측</button>
+    <button id="predict">예측 [ALT + q]</button>
+    <button id="redraw" disabled="disabled">다시그리기 [ALT + w]</button>
 </div>
 <div>
     <span id="resultMsg1"></span>
 </div>
 <script>
+    // let userName = prompt("user name");
     // let ws = new WebSocket(`wss://192.168.5.107:8080/ws/images`);
     let ws = new WebSocket(`ws://${location.host}/ws/images`);
     ws.onopen = function () {
@@ -91,11 +93,13 @@
     ctx.lineWidth = 25;
     ctx.strokeStyle = "#fff";
     let painting = false;
+    let painted = 0;
 
     function stopPainting() {
         if (painting) {
             console.info("# stopPainting - ")
             painting = false;
+            painted++;
             //     resizedContext.drawImage(canvas, 0, 0, 100, 100);
             //     // resizedContext.fillStyle = "#000";
             //
@@ -188,13 +192,12 @@
         let labelSetBtnArr = document.querySelectorAll('button[data-label]');
         for(let i = 0; i < labelSetBtnArr.length; i++) {
             labelSetBtnArr[i].addEventListener("click", (e) => {
-                const xhr = new XMLHttpRequest();
-                const method = "POST";
-                const url = `http://${location.host}/api/v1/predict/number-image/label`;
-                let reqData = JSON.stringify(e.target.dataset); // { seq, label }
+                let xhr = new XMLHttpRequest();
+                let reqData = JSON.parse(JSON.stringify(e.target.dataset)); // { seq, label }
+                let url = `http://${location.host}/api/v1/models/number-image/${reqData.seq}/label`;
 
                 // 요청을 초기화 합니다.
-                xhr.open(method, url);
+                xhr.open("PUT", url);
                 xhr.setRequestHeader('Content-Type', 'application/json');
                 xhr.onreadystatechange = function (event) {
                     const { target } = event;
@@ -206,15 +209,46 @@
                         }
                     }
                 };
-                xhr.send(reqData);
+                xhr.send(JSON.stringify(reqData));
             });
         }
     }
 
+    document.getElementById("redraw").addEventListener("click", (e) => {
+        const xhr = new XMLHttpRequest();
+        const method = "DELETE";
+        let seq = document.getElementById("predict").dataset.seq;
+        if (!seq) {
+            alert("예측을 먼저 수행하세요.");
+            return;
+        }
+        const url = `http://${location.host}/api/v1/models/number-image/${seq}`;
+
+        // 요청을 초기화 합니다.
+        xhr.open(method, url);
+        xhr.setRequestHeader('Content-Type', 'application/json');
+        xhr.onreadystatechange = function (event) {
+            const { target } = event;
+            if (target.readyState === XMLHttpRequest.DONE) {
+                const { status } = target;
+                if (status === 0 || (status >= 200 && status < 400)) {
+                    location.reload();
+                } else {
+                    // 에러가 발생한 경우
+                }
+            }
+        };
+        xhr.send();
+    });
+
     document.getElementById("predict").addEventListener("click", (e) => {
+        if (painted < 1) {
+            alert("숫자를 먼저 그려주세요.");
+            return;
+        }
         const xhr = new XMLHttpRequest();
         const method = "POST";
-        const url = `http://${location.host}/api/v1/predict/number-image/json-base64`;
+        const url = `http://${location.host}/api/v1/models/number-image/predict/json-base64`;
 
         resizedContext.drawImage(canvas, 0, 0, 100, 100);
         resizedContext.fillStyle = "#000";
@@ -229,21 +263,45 @@
                 const { status } = target;
 
                 if (status === 0 || (status >= 200 && status < 400)) {
-                    procResult((JSON.parse(xhr.response)));
+                    let data = JSON.parse(xhr.response);
+                    document.getElementById("predict").dataset.seq = data.trainDataHistorySeq;
+                    document.getElementById("redraw").disabled = false;
+                    procResult(data);
                 } else {
                     // 에러가 발생한 경우
                 }
             }
         };
         xhr.send(reqData);
-    })
+    });
+
     document.addEventListener('keydown', (e) => {
         // e.preventDefault();
-        if (e.altKey && /[0-9]/.test(e.key)) {
-            document.querySelector(`button[data-label="${e.key}"]`).click();
-            return false;
+        if (e.altKey) {
+            switch (e.key) {
+                case "0":
+                case "1":
+                case "2":
+                case "3":
+                case "4":
+                case "5":
+                case "6":
+                case "7":
+                case "8":
+                case "9":
+                    document.querySelector(`button[data-label="${e.key}"]`).click();
+                    return false;
+                case "q":
+                    document.querySelector(`button#predict`).click();
+                    return false;
+                case "w":
+                    document.querySelector(`button#redraw`).click();
+                    return false;
+            }
+
         }
     });
+
 </script>
 <div id="resultMsg2"></div>
 </body>

@@ -98,4 +98,10 @@ public class NumberImagePredictionService extends BasePredictionService {
         data.updateInputLabel(reqDto.getLabel());
         repo.save(data);
     }
+
+    public void delete(Long seq) {
+        TrainDataHistory data = repo.findById(seq)
+                .orElseThrow(() -> new IllegalArgumentException("몰루"));
+        repo.delete(data);
+    }
 }
