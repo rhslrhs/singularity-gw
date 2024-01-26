@@ -6,7 +6,7 @@ node {
     stage("Gradle Build") {
         sh """
             # export JAVA_HOME=/opt/java/openjdk-17.0.2/
-            cd ${WORKSPACE}/singularity-server/
+            cd ${WORKSPACE}/singularity-gw/
             
             ## build 
             chmod +x gradlew
@@ -16,7 +16,7 @@ node {
 
     stage("Docker Build") {
         sh """
-            cd ${WORKSPACE}/singularity-server
+            cd ${WORKSPACE}/singularity-gw
             docker build -t singularity-gw:1.0.0 -f Dockerfiles/Dockerfile .
         """
     }
